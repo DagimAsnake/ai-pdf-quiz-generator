@@ -1,41 +1,119 @@
-# AI SDK PDF Support Example
+# Interactive Learning Platform
 
-This example demonstrates how to use the [AI SDK](https://sdk.vercel.ai/docs) with [Next.js](https://nextjs.org/) with the `useObject` hook to submit PDF messages to the AI provider of your choice (Google or Anthropic).
+A modern web application that transforms PDF content into interactive learning experiences, similar to Quizlet. Built with Next.js, TypeScript, and powered by Google's Gemini AI.
 
-## Deploy your own
+## Features
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Fai-sdk-preview-pdf-support&env=GOOGLE_API_KEY&envDescription=API%20keys%20needed%20for%20application&envLink=google.com)
+### 📚 Multiple Learning Modes
 
-## How to use
+- **Quiz Mode**: Test your knowledge with AI-generated multiple-choice questions
+- **Flashcards**: Review concepts with interactive flashcards
+- **Match Game**: Reinforce learning by matching questions with answers
 
-Run [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init), [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/), or [pnpm](https://pnpm.io) to bootstrap the example:
+### 🤖 AI-Powered Content Generation
+
+- Automatically generates questions from uploaded PDF documents
+- Supports both single and multiple correct answer formats
+- Provides detailed explanations for answers
+
+### 📊 Progress Tracking
+
+- Track your performance across different learning modes
+- View detailed quiz results with correct/incorrect answers
+- Monitor your study statistics
+
+## Technology Stack
+
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS
+- **AI Integration**: Google Gemini AI
+- **State Management**: Zustand
+- **UI Components**: Shadcn/ui
+- **Animations**: Framer Motion
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- Google Gemini API key
+
+### Installation
+
+1. Clone the repository
 
 ```bash
-npx create-next-app --example https://github.com/vercel-labs/ai-sdk-preview-pdf-support ai-sdk-preview-pdf-support-example
+git clone https://github.com/DagimAsnake/ai-pdf-quiz-generator.git
+cd your-repo-name
 ```
+
+2. Install dependencies
 
 ```bash
-yarn create next-app --example https://github.com/vercel-labs/ai-sdk-preview-pdf-support ai-sdk-preview-pdf-support-example
+npm install
+# or
+yarn install
 ```
+
+3. Set up environment variables
 
 ```bash
-pnpm create next-app --example https://github.com/vercel-labs/ai-sdk-preview-pdf-support ai-sdk-preview-pdf-support-example
+cp .env.example .env.local
 ```
 
-To run the example locally you need to:
+Add your Google Gemini API key to `.env.local`:
 
-1. Sign up for accounts with the AI providers you want to use (e.g., Google).
-2. Obtain API keys for Google provider.
-3. Set the required environment variables as shown in the `.env.example` file, but in a new file called `.env`.
-4. `npm install` to install the required dependencies.
-5. `npm run dev` to launch the development server.
+```
+GOOGLE_API_KEY=your_api_key_here
+```
 
+4. Run the development server
 
-## Learn More
+```bash
+npm run dev
+# or
+yarn dev
+```
 
-To learn more about Vercel AI SDK or Next.js take a look at the following resources:
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-- [AI SDK docs](https://sdk.vercel.ai/docs)
-- [Vercel AI Playground](https://play.vercel.ai)
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+## Usage
 
+1. **Upload PDF**
+
+   - Drop your PDF file or click to upload
+   - Supports files up to 5MB
+
+2. **Choose Learning Mode**
+
+   - Select from Quiz, Flashcards, or Match game
+   - Each mode offers a different way to interact with the content
+
+3. **Track Progress**
+   - View statistics for each learning mode
+   - Review detailed quiz results
+   - Track completion rates
+
+## Features in Detail
+
+### Quiz Mode
+
+- Multiple choice questions with single or multiple correct answers
+- Detailed explanations for each answer
+- Comprehensive review of results with color-coded feedback
+
+### Flashcards
+
+- Interactive card flipping animation
+- Question on front, answer on back
+- Progress tracking through the deck
+
+### Match Game
+
+- Match questions with their corresponding answers
+- Timer to track completion speed
+- Interactive UI with immediate feedback
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
