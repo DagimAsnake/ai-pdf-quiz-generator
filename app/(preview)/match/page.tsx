@@ -13,20 +13,14 @@ export default function MatchPage() {
   const [gameComplete, setGameComplete] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [key, setKey] = useState(0);
-
   const { title, questions, updateStats } = useStudySetStore();
 
-  // Move the redirect to useEffect
+  // Move all useEffect hooks to the top, before any conditional returns
   useEffect(() => {
     if (questions.length === 0) {
       router.push('/');
     }
   }, [questions.length, router]);
-
-  // If no questions, return null without redirecting
-  if (questions.length === 0) {
-    return null;
-  }
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -37,6 +31,11 @@ export default function MatchPage() {
     }
     return () => clearInterval(interval);
   }, [gameComplete]);
+
+  // Move the conditional return after all hooks
+  if (questions.length === 0) {
+    return null;
+  }
 
   const handleGameComplete = () => {
     setGameComplete(true);

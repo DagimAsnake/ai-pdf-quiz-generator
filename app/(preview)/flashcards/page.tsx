@@ -14,14 +14,14 @@ export default function FlashcardsPage() {
   const router = useRouter();
   const { title, questions, updateStats } = useStudySetStore();
 
-  // Move the redirect to useEffect
+  // Move useEffect before conditional return
   useEffect(() => {
     if (questions.length === 0) {
       router.push('/');
     }
   }, [questions.length, router]);
 
-  // If no questions, return null without redirecting
+  // Move conditional return after hooks
   if (questions.length === 0) {
     return null;
   }
