@@ -1,219 +1,213 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  X,
-  RefreshCw,
-  FileText,
-} from "lucide-react";
-import QuizScore from "./score";
-import QuizReview from "./quiz-overview";
-import { Question } from "@/lib/schemas";
+'use client';
 
-type QuizProps = {
-  questions: Question[];
-  clearPDF: () => void;
-  title: string;
-};
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useStudySetStore } from '@/lib/store';
+import { useRouter } from 'next/navigation';
+import { Check, X } from 'lucide-react';
 
-const QuestionCard: React.FC<{
-  question: Question;
-  selectedAnswer: string | null;
-  onSelectAnswer: (answer: string) => void;
-  isSubmitted: boolean;
-  showCorrectAnswer: boolean;
-}> = ({ question, selectedAnswer, onSelectAnswer, showCorrectAnswer }) => {
-  const answerLabels = ["A", "B", "C", "D"];
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold leading-tight">
-        {question.question}
-      </h2>
-      <div className="grid grid-cols-1 gap-4">
-        {question.options.map((option, index) => (
-          <Button
-            key={index}
-            variant={
-              selectedAnswer === answerLabels[index] ? "secondary" : "outline"
-            }
-            className={`h-auto py-6 px-4 justify-start text-left whitespace-normal ${
-              showCorrectAnswer && answerLabels[index] === question.answer
-                ? "bg-green-600 hover:bg-green-700"
-                : showCorrectAnswer &&
-                    selectedAnswer === answerLabels[index] &&
-                    selectedAnswer !== question.answer
-                  ? "bg-red-600 hover:bg-red-700"
-                  : ""
-            }`}
-            onClick={() => onSelectAnswer(answerLabels[index])}
-          >
-            <span className="text-lg font-medium mr-4 shrink-0">
-              {answerLabels[index]}
-            </span>
-            <span className="flex-grow">{option}</span>
-            {(showCorrectAnswer && answerLabels[index] === question.answer) ||
-              (selectedAnswer === answerLabels[index] && (
-                <Check className="ml-2 shrink-0 text-white" size={20} />
-              ))}
-            {showCorrectAnswer &&
-              selectedAnswer === answerLabels[index] &&
-              selectedAnswer !== question.answer && (
-                <X className="ml-2 shrink-0 text-white" size={20} />
-              )}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export default function Quiz({
-  questions,
-  clearPDF,
-  title = "Quiz",
-}: QuizProps) {
+export default function Quiz() {
+  const router = useRouter();
+  const { questions, title, updateStats } = useStudySetStore();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(
-    Array(questions.length).fill(null),
+  const [userAnswers, setUserAnswers] = useState<Set<string>[]>(
+    new Array(questions.length).fill(null).map(() => new Set())
   );
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [score, setScore] = useState<number | null>(null);
-  const [progress, setProgress] = useState(0);
+  const [score, setScore] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setProgress((currentQuestionIndex / questions.length) * 100);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [currentQuestionIndex, questions.length]);
-
-  const handleSelectAnswer = (answer: string) => {
-    if (!isSubmitted) {
-      const newAnswers = [...answers];
-      newAnswers[currentQuestionIndex] = answer;
-      setAnswers(newAnswers);
-    }
-  };
-
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      handleSubmit();
-    }
-  };
-
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
-
-  const handleSubmit = () => {
-    setIsSubmitted(true);
-    const correctAnswers = questions.reduce((acc, question, index) => {
-      return acc + (question.answer === answers[index] ? 1 : 0);
-    }, 0);
-    setScore(correctAnswers);
-  };
-
-  const handleReset = () => {
-    setAnswers(Array(questions.length).fill(null));
-    setIsSubmitted(false);
-    setScore(null);
-    setCurrentQuestionIndex(0);
-    setProgress(0);
-  };
-
+  // If no questions, return to home
+  if (questions.length === 0) {
+    return null;
+  }
+  console.log(questions);
   const currentQuestion = questions[currentQuestionIndex];
+  const isMultipleAnswer = currentQuestion.answer.type === 'multiple';
+
+  const handleAnswerSelect = (answer: string) => {
+    const newAnswers = [...userAnswers];
+    const currentAnswers = new Set(newAnswers[currentQuestionIndex]);
+
+    if (isMultipleAnswer) {
+      if (currentAnswers.has(answer)) {
+        currentAnswers.delete(answer);
+      } else {
+        currentAnswers.add(answer);
+      }
+    } else {
+      currentAnswers.clear();
+      currentAnswers.add(answer);
+    }
+
+    newAnswers[currentQuestionIndex] = currentAnswers;
+    setUserAnswers(newAnswers);
+  };
+
+  const checkAnswer = (questionIndex: number) => {
+    const question = questions[questionIndex];
+    const userAnswer = userAnswers[questionIndex];
+
+    if (question.answer.type === 'multiple') {
+      const correctAnswers = new Set(question.answer.value as string[]);
+      return (
+        userAnswer.size === correctAnswers.size &&
+        [...userAnswer].every((answer) => correctAnswers.has(answer))
+      );
+    } else {
+      return userAnswer.has(question.answer.value as string);
+    }
+  };
+
+  const handleNext = () => {
+    const isCorrect = checkAnswer(currentQuestionIndex);
+
+    if (currentQuestionIndex === questions.length - 1) {
+      const finalScore = isCorrect ? score + 1 : score;
+      setScore(finalScore);
+      setShowResults(true);
+      updateStats('quiz');
+    } else {
+      if (isCorrect) setScore(score + 1);
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    }
+  };
+
+  const handleRetry = () => {
+    setCurrentQuestionIndex(0);
+    setUserAnswers(new Array(questions.length).fill(null).map(() => new Set()));
+    setScore(0);
+    setShowResults(false);
+  };
+
+  const handleReturn = () => {
+    router.push('/');
+  };
+
+  if (showResults) {
+    return (
+      <Card className='w-full max-w-3xl mx-auto'>
+        <CardHeader>
+          <CardTitle>Quiz Results</CardTitle>
+        </CardHeader>
+        <CardContent className='space-y-6'>
+          <div className='text-lg font-semibold mb-4'>
+            You scored {score} out of {questions.length}!
+          </div>
+
+          {/* Questions Review */}
+          <div className='space-y-8'>
+            {questions.map((question, index) => {
+              const isCorrect = checkAnswer(index);
+              const userAnswer = userAnswers[index];
+
+              return (
+                <div key={index} className='border rounded-lg p-4'>
+                  <div className='flex items-start gap-2'>
+                    <div className='mt-1'>
+                      {isCorrect ? (
+                        <Check className='h-5 w-5 text-green-500' />
+                      ) : (
+                        <X className='h-5 w-5 text-red-500' />
+                      )}
+                    </div>
+                    <div className='flex-1'>
+                      <p className='font-medium mb-2'>
+                        Question {index + 1}: {question.question}
+                      </p>
+                      {question.answer.type === 'multiple' && (
+                        <p className='text-sm text-muted-foreground mb-2'>
+                          (Multiple answers required)
+                        </p>
+                      )}
+                      <div className='space-y-2'>
+                        {question.options.map((option) => {
+                          const isUserSelection = userAnswer.has(option);
+                          const isCorrectAnswer = Array.isArray(
+                            question.answer.value
+                          )
+                            ? question.answer.value.includes(option)
+                            : option === question.answer.value;
+
+                          return (
+                            <div
+                              key={option}
+                              className={`p-3 rounded ${
+                                isUserSelection
+                                  ? isCorrectAnswer
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-100'
+                                    : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-100'
+                                  : isCorrectAnswer
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-100'
+                                  : 'bg-zinc-100 dark:bg-zinc-800'
+                              }`}
+                            >
+                              {option}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className='mt-4 text-sm text-muted-foreground'>
+                        {question.answer.explanation}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className='flex gap-4 pt-4'>
+            <Button onClick={handleRetry}>Try Again</Button>
+            <Button variant='outline' onClick={handleReturn}>
+              Return to Home
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-8 text-center text-foreground">
-          {title}
-        </h1>
-        <div className="relative">
-          {!isSubmitted && <Progress value={progress} className="h-1 mb-8" />}
-          <div className="min-h-[400px]">
-            {" "}
-            {/* Prevent layout shift */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={isSubmitted ? "results" : currentQuestionIndex}
-                initial={{ opacity: 1 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                {!isSubmitted ? (
-                  <div className="space-y-8">
-                    <QuestionCard
-                      question={currentQuestion}
-                      selectedAnswer={answers[currentQuestionIndex]}
-                      onSelectAnswer={handleSelectAnswer}
-                      isSubmitted={isSubmitted}
-                      showCorrectAnswer={false}
-                    />
-                    <div className="flex justify-between items-center pt-4">
-                      <Button
-                        onClick={handlePreviousQuestion}
-                        disabled={currentQuestionIndex === 0}
-                        variant="ghost"
-                      >
-                        <ChevronLeft className="mr-2 h-4 w-4" /> Previous
-                      </Button>
-                      <span className="text-sm font-medium">
-                        {currentQuestionIndex + 1} / {questions.length}
-                      </span>
-                      <Button
-                        onClick={handleNextQuestion}
-                        disabled={answers[currentQuestionIndex] === null}
-                        variant="ghost"
-                      >
-                        {currentQuestionIndex === questions.length - 1
-                          ? "Submit"
-                          : "Next"}{" "}
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    <QuizScore
-                      correctAnswers={score ?? 0}
-                      totalQuestions={questions.length}
-                    />
-                    <div className="space-y-12">
-                      <QuizReview questions={questions} userAnswers={answers} />
-                    </div>
-                    <div className="flex justify-center space-x-4 pt-4">
-                      <Button
-                        onClick={handleReset}
-                        variant="outline"
-                        className="bg-muted hover:bg-muted/80 w-full"
-                      >
-                        <RefreshCw className="mr-2 h-4 w-4" /> Reset Quiz
-                      </Button>
-                      <Button
-                        onClick={clearPDF}
-                        className="bg-primary hover:bg-primary/90 w-full"
-                      >
-                        <FileText className="mr-2 h-4 w-4" /> Try Another PDF
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+    <CardContent className='max-w-3xl mx-auto'>
+      <div className='space-y-4'>
+        <div className='text-sm text-muted-foreground'>
+          Question {currentQuestionIndex + 1} of {questions.length}
         </div>
-      </main>
-    </div>
+        <div className='text-lg font-medium mb-6'>
+          {currentQuestion.question}
+        </div>
+        {isMultipleAnswer && (
+          <div className='text-sm text-muted-foreground mb-2'>
+            Select all correct answers
+          </div>
+        )}
+        <div className='grid gap-3'>
+          {currentQuestion.options.map((option) => {
+            return (
+              <Button
+                key={option}
+                variant={
+                  userAnswers[currentQuestionIndex].has(option)
+                    ? 'default'
+                    : 'outline'
+                }
+                className='w-full text-left h-auto py-3 px-4 whitespace-normal'
+                onClick={() => handleAnswerSelect(option)}
+              >
+                <span className='flex-1'>{option}</span>
+              </Button>
+            );
+          })}
+        </div>
+        <Button
+          onClick={handleNext}
+          disabled={userAnswers[currentQuestionIndex].size === 0}
+          className='w-full mt-6'
+        >
+          {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next'}
+        </Button>
+      </div>
+    </CardContent>
   );
 }
